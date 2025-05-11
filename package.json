@@ -1,0 +1,24 @@
+{
+  "name": "3d-sign-creator",
+  "version": "1.0.0",
+  "description": "A browser-based 3D sign creator tool for text and SVG designs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "3d",
+    "sign",
+    "creator",
+    "three.js",
+    "svg",
+    "stl",
+    "3d-printing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
