@@ -719,4 +719,88 @@ footer {
     .settings-section {
         padding: 12px;
     }
+    
+    .ar-button {
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+}
+
+/* AR Button and Viewer */
+.ar-button {
+    margin-top: 15px;
+    width: 100%;
+    font-size: 1.1rem;
+    background-color: #3b82f6; /* Blue color for AR button */
+    border-color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.ar-button:hover {
+    background-color: #2563eb;
+}
+
+/* AR container styles */
+#ar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: none;
+}
+
+#ar-ui-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+#ar-button, #ar-info-message {
+    background-color: #3b82f6;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+    pointer-events: auto;
+}
+
+#ar-button:hover {
+    background-color: #2563eb;
+}
+
+#ar-info-message {
+    margin-top: 1rem;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0.75rem 1rem;
+    display: none;
+}
+
+.reticle {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 1002;
 }
