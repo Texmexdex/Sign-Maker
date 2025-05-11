@@ -286,9 +286,12 @@ class PreviewRenderer {
                 color: 0xffffff
             });
             
-            // Black side material
-            const blackSideMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0x000000
+            // Black side material with metallic, glossy finish
+            const blackSideMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x000000,
+                specular: 0x555555,
+                shininess: 100,
+                reflectivity: 1.0
             });
             
             // Apply materials to all meshes

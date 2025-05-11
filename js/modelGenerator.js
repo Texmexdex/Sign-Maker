@@ -70,8 +70,11 @@ class ModelGenerator {
                                 color: settings.frontColor
                             }),
                             // Second material (index 1) is for side faces
-                            new THREE.MeshBasicMaterial({ 
-                                color: settings.sideColor
+                            new THREE.MeshPhongMaterial({ 
+                                color: settings.sideColor,
+                                specular: 0x555555,
+                                shininess: 100,
+                                reflectivity: 1.0
                             })
                         ];
                         
