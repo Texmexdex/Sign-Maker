@@ -159,16 +159,23 @@ class FontManager {
             // Create a path from the text
             const path = fontObject.getPath(text, 0, 0, fontSize);
             
+            // Use fixed outline settings since UI elements were removed
+            const outlineColor = '#000000';
+            const outlineThickness = 20;
+            
             // Convert to SVG path data
             const svgPath = path.toSVG(2);
             
             // Get path bounds
             const bounds = path.getBoundingBox();
             
+            // Create path data with outline attributes
             return {
                 paths: [{ 
                     path: svgPath.replace(/^<path d="([^"]+)".*$/, '$1'),
-                    fill: '#000000'
+                    fill: '#000000',
+                    stroke: outlineColor,
+                    strokeWidth: outlineThickness
                 }],
                 bounds: bounds
             };

@@ -23,7 +23,7 @@ class ModelGenerator {
             bevelSize: 0.5,
             bevelSegments: 3,
             frontColor: '#ffffff',
-            sideColor: '#cccccc'
+            sideColor: '#000000'
         };
         
         // Merge provided options with defaults
@@ -65,15 +65,13 @@ class ModelGenerator {
                         
                         // Create materials
                         const materials = [
-                            new THREE.MeshStandardMaterial({ 
-                                color: settings.sideColor,
-                                roughness: 0.5,
-                                metalness: 0.2
+                            // First material (index 0) is for front faces
+                            new THREE.MeshBasicMaterial({ 
+                                color: settings.frontColor
                             }),
-                            new THREE.MeshStandardMaterial({ 
-                                color: settings.frontColor,
-                                roughness: 0.3,
-                                metalness: 0.1
+                            // Second material (index 1) is for side faces
+                            new THREE.MeshBasicMaterial({ 
+                                color: settings.sideColor
                             })
                         ];
                         
