@@ -101,11 +101,20 @@ class SvgProcessor {
             if (d) {
                 // Get the fill color
                 const fill = pathElement.getAttribute('fill') || '#000000';
+                // Get the stroke color and width
+                const stroke = pathElement.getAttribute('stroke');
+                const strokeWidth = pathElement.getAttribute('stroke-width');
                 
-                paths.push({
+                const pathData = {
                     path: d,
                     fill: fill
-                });
+                };
+                
+                // Add stroke attributes if they exist
+                if (stroke) pathData.stroke = stroke;
+                if (strokeWidth) pathData.strokeWidth = parseFloat(strokeWidth);
+                
+                paths.push(pathData);
             }
         });
         
@@ -127,7 +136,7 @@ class SvgProcessor {
      * @param {number} outlineThickness - Thickness of the outline
      * @returns {string} - SVG string
      */
-    generateSvgString(pathData, outlineColor = '#000000', outlineThickness = 1) {
+    generateSvgString(pathData, outlineColor = '#000000', outlineThickness = 20) {
         if (!pathData || !pathData.paths || pathData.paths.length === 0) {
             return null;
         }
@@ -146,8 +155,10 @@ class SvgProcessor {
         pathData.paths.forEach(pathInfo => {
             svgString += `  <path d="${pathInfo.path}" fill="${pathInfo.fill}" `;
             
-            // Add stroke if outline thickness > 0
-            if (outlineThickness > 0) {
+            // Add stroke from path info or from parameters
+            if (pathInfo.stroke && pathInfo.strokeWidth) {
+                svgString += `stroke="${pathInfo.stroke}" stroke-width="${pathInfo.strokeWidth}" `;
+            } else if (outlineThickness > 0) {
                 svgString += `stroke="${outlineColor}" stroke-width="${outlineThickness}" `;
             }
             

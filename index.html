@@ -3,19 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Sign Creator</title>
+    <title>TeXmExDeX's deSIGNer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/fontpicker.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234361ee'%3E%3Cpath d='M19 7h-14v-2h14v2zm0 4h-14v-2h14v2zm-14 4h14v-2h-14v2zm0 4h14v-2h-14v2z'/%3E%3C/svg%3E">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>3D Sign Creator</h1>
+            <div class="logo">
+                <i class="ri-3d-cube-fill"></i>
+            </div>
+            <h1>TeXmExDeX's  sign deSIGNer</h1>
+            <p class="subtitle">Create 3D text designs for ordering your custom lightup signs</p>
         </header>
         
         <div class="app-container">
             <div class="input-panel">
-                <h2>Design Your Sign</h2>
+                <h2><i class="ri-tools-fill"></i> Design Your Sign</h2>
                 
                 <div class="input-group">
                     <label for="text-input">Text</label>
@@ -30,70 +36,102 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Upload Custom SVG</label>
-                    <input type="file" id="svg-upload" accept=".svg">
+                    <label><i class="ri-upload-2-line"></i> Upload Custom SVG</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="svg-upload" accept=".svg">
+                        <div class="file-upload-label">
+                            <i class="ri-upload-cloud-line"></i>
+                            <span>Choose a file or drag it here</span>
+                        </div>
+                    </div>
                 </div>
                 
-                <h3>Outline Settings</h3>
-                <div class="input-group">
-                    <label for="outline-color">Outline Color</label>
-                    <input type="color" id="outline-color" value="#000000">
+                <div class="settings-section">
+                    <h3><i class="ri-cube-line"></i> 3D Settings</h3>
+                    <div class="input-group">
+                        <label for="extrusion-depth">Extrusion Depth</label>
+                        <div class="slider-container">
+                            <input type="range" id="extrusion-depth" min="15" max="30" value="20" step="1">
+                            <span id="extrusion-depth-value">20mm</span>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group checkbox-group">
+                        <input type="checkbox" id="dynamic-depth">
+                        <label for="dynamic-depth">Dynamic Depth (1/4 of design height)</label>
+                    </div>
+                    
+                    <div class="input-group checkbox-group">
+                        <input type="checkbox" id="bevel-enabled" checked>
+                        <label for="bevel-enabled">Enable Bevels</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="front-color">Front Color</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="front-color" value="#ffffff">
+                            <span class="color-value">#ffffff</span>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="side-color">Side Color</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="side-color" value="#cccccc">
+                            <span class="color-value">#cccccc</span>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="input-group">
-                    <label for="outline-thickness">Outline Thickness</label>
-                    <input type="range" id="outline-thickness" min="0" max="10" value="1" step="0.1">
-                    <span id="outline-thickness-value">1px</span>
-                </div>
-                
-                <h3>3D Settings</h3>
-                <div class="input-group">
-                    <label for="extrusion-depth">Extrusion Depth</label>
-                    <input type="range" id="extrusion-depth" min="1" max="100" value="20" step="1">
-                    <span id="extrusion-depth-value">20mm</span>
-                </div>
-                
-                <div class="input-group">
-                    <label for="dynamic-depth">Dynamic Depth</label>
-                    <input type="checkbox" id="dynamic-depth">
-                    <span>Use 1/4 of design height</span>
-                </div>
-                
-                <div class="input-group">
-                    <label for="bevel-enabled">Enable Bevels</label>
-                    <input type="checkbox" id="bevel-enabled" checked>
-                </div>
-                
-                <div class="input-group">
-                    <label for="front-color">Front/Back Color</label>
-                    <input type="color" id="front-color" value="#ffffff">
-                </div>
-                
-                <div class="input-group">
-                    <label for="side-color">Side Color</label>
-                    <input type="color" id="side-color" value="#cccccc">
-                </div>
-                
-                <button id="update-preview" class="btn primary">Update Preview</button>
+                <button id="update-preview" class="btn primary">
+                    <i class="ri-refresh-line"></i> Update Preview
+                </button>
                 
                 <div class="export-options">
-                    <h3>Export</h3>
-                    <button id="download-svg" class="btn">Download SVG</button>
-                    <button id="download-stl" class="btn">Download STL</button>
+                    <h3><i class="ri-download-line"></i> Export</h3>
+                    <div class="export-buttons">
+                        <button id="download-svg" class="btn">
+                            <i class="ri-file-download-line"></i> SVG
+                        </button>
+                        <button id="download-stl" class="btn">
+                            <i class="ri-file-3d-line"></i> STL
+                        </button>
+                    </div>
                 </div>
             </div>
             
             <div class="preview-panel">
+                <div class="preview-header">
+                    <h3><i class="ri-eye-line"></i> Preview</h3>
+                    <div class="preview-controls">
+                        <button id="reset-camera" class="control-btn" title="Reset Camera">
+                            <i class="ri-focus-3-line"></i>
+                        </button>
+                    </div>
+                </div>
+                
                 <div id="loading-indicator" class="hidden">
                     <div class="spinner"></div>
-                    <p>Processing...</p>
+                    <p>Processing your design...</p>
                 </div>
+                
                 <div id="error-message" class="hidden">
+                    <i class="ri-error-warning-line"></i>
                     <p>An error occurred. Please try again with different parameters.</p>
                 </div>
+                
                 <div id="preview-container"></div>
+                
+                <div class="preview-tip">
+                    <i class="ri-information-line"></i>
+                    <span>Tip: Click and drag to rotate. Use mouse wheel to zoom.</span>
+                </div>
             </div>
         </div>
+        
+        <footer>
+            <p>TeXmExDeX Type Tools, 2025</p>
+        </footer>
     </div>
     
     <!-- Scripts -->
