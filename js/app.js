@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelGenerator = new ModelGenerator();
     const previewRenderer = new PreviewRenderer('preview-container');
     const exportManager = new ExportManager(svgProcessor, modelGenerator);
+    const arViewer = new ARViewer(); // Initialize AR Viewer
     
     // Global variables to store current state
     window.currentPathData = null;
@@ -123,6 +124,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('download-stl').addEventListener('click', () => {
         exportManager.exportSTL(previewRenderer.getCurrentModel());
+    });
+    
+    // Event listener for AR button
+    document.getElementById('view-in-ar').addEventListener('click', () => {
+        const currentModel = previewRenderer.getCurrentModel();
+        if (currentModel) {
+            arViewer.initWithModel(currentModel);
+        } else {
+            alert('Please generate a 3D model first.');
+        }
     });
     
     /**
