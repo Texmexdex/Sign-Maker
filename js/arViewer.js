@@ -131,25 +131,47 @@ class ARViewer {
      * Initialize Three.js scene, camera, renderer, etc.
      */
     initThreeJS() {
+        console.log("Initializing AR ThreeJS environment");
+        
         // Create scene
         this.scene = new THREE.Scene();
         
         // Create camera
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
         
-        // Add lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Add lights - much brighter for AR environment
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Brighter ambient
         this.scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        directionalLight.position.set(1, 1, 1).normalize();
+        // Directional light to simulate sun
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(1, 2, 1).normalize();
         this.scene.add(directionalLight);
         
-        // Create renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        // Add a hemisphere light for better ambient lighting
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+        this.scene.add(hemisphereLight);
+        
+        // Add a point light that will follow the camera
+        const pointLight = new THREE.PointLight(0xffffff, 0.8, 5);
+        pointLight.position.set(0, 0, 0.5); // Slightly in front of camera
+        this.camera.add(pointLight);
+        this.scene.add(this.camera); // Need to add camera to scene for its children to work
+        
+        console.log("AR lighting setup complete");
+        
+        // Create renderer with physically correct lighting
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            alpha: true,
+            logarithmicDepthBuffer: true, // Helps with depth precision
+            preserveDrawingBuffer: true // Needed for AR
+        });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.xr.enabled = true; // Enable WebXR
+        this.renderer.outputEncoding = THREE.sRGBEncoding; // Better color accuracy
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // Better contrast
         this.arContainer.appendChild(this.renderer.domElement);
         
         // Create reticle
@@ -163,6 +185,8 @@ class ARViewer {
         this.reticle.matrixAutoUpdate = false;
         this.reticle.visible = false;
         this.scene.add(this.reticle);
+        
+        console.log("AR scene initialization complete");
     }
     
     /**
@@ -170,24 +194,80 @@ class ARViewer {
      * @param {THREE.Object3D} model - The 3D model to display in AR
      */
     prepareModelForAR(model) {
+        console.log("Preparing model for AR...", model);
+        
         // Clone model to avoid modifying the original
         this.modelToPlace = model.clone();
         
-        // Remove unnecessary objects from the model (background, stars, etc.)
-        // Only keep the actual 3D text meshes
+        // Create a new group to hold only mesh objects
+        const cleanGroup = new THREE.Group();
+        
+        // Extract only the mesh objects from the model
         this.modelToPlace.traverse(child => {
-            // Ensure the child is visible
             if (child.isMesh) {
-                child.visible = true;
+                console.log("Found mesh in model:", child.name || "unnamed mesh");
                 
-                // If it uses MeshPhongMaterial, make sure it has proper properties for AR
-                if (child.material && child.material.type === 'MeshPhongMaterial') {
-                    child.material.needsUpdate = true;
-                    child.castShadow = true;
-                    child.receiveShadow = false;
+                // Create a new mesh with the same geometry but ensure materials are visible in AR
+                const newMesh = child.clone();
+                
+                // Handle array of materials
+                if (Array.isArray(newMesh.material)) {
+                    newMesh.material = newMesh.material.map(mat => {
+                        // Create a new material that will work in AR lighting conditions
+                        if (mat.type === 'MeshPhongMaterial') {
+                            return new THREE.MeshPhongMaterial({
+                                color: mat.color,
+                                specular: mat.specular || 0x999999,
+                                shininess: mat.shininess || 100,
+                                reflectivity: mat.reflectivity || 1.0
+                            });
+                        } else {
+                            // If not a MeshPhongMaterial, convert to one for better AR rendering
+                            return new THREE.MeshPhongMaterial({
+                                color: mat.color,
+                                specular: 0x999999,
+                                shininess: 100,
+                                reflectivity: 1.0
+                            });
+                        }
+                    });
+                } else {
+                    // Single material
+                    const originalColor = newMesh.material.color;
+                    if (newMesh.material.type === 'MeshPhongMaterial') {
+                        newMesh.material = new THREE.MeshPhongMaterial({
+                            color: originalColor,
+                            specular: newMesh.material.specular || 0x999999,
+                            shininess: newMesh.material.shininess || 100,
+                            reflectivity: newMesh.material.reflectivity || 1.0
+                        });
+                    } else {
+                        // If not a MeshPhongMaterial, convert to one for better AR rendering
+                        newMesh.material = new THREE.MeshPhongMaterial({
+                            color: originalColor,
+                            specular: 0x999999,
+                            shininess: 100,
+                            reflectivity: 1.0
+                        });
+                    }
                 }
+                
+                // Ensure the mesh is set up correctly for AR
+                newMesh.castShadow = true;
+                newMesh.receiveShadow = true;
+                
+                // Add this mesh to our clean group
+                cleanGroup.add(newMesh);
             }
         });
+        
+        // If we found any meshes, use the clean group
+        if (cleanGroup.children.length > 0) {
+            console.log(`Found ${cleanGroup.children.length} meshes for AR`);
+            this.modelToPlace = cleanGroup;
+        } else {
+            console.warn("No meshes found in the model for AR");
+        }
         
         // Center the model
         const box = new THREE.Box3().setFromObject(this.modelToPlace);
@@ -203,10 +283,15 @@ class ARViewer {
         if (maxDim > 0) {
             const scale = desiredSize / maxDim;
             this.modelToPlace.scale.set(scale, scale, scale);
+            console.log(`Scaled model by ${scale} to fit ${desiredSize}m size`);
         }
         
         // Make model initially invisible until placed
         this.modelToPlace.visible = false;
+        
+        // Add to scene so it's ready to be placed
+        this.scene.add(this.modelToPlace);
+        console.log("Model prepared and added to AR scene");
     }
     
     /**
@@ -224,24 +309,66 @@ class ARViewer {
      * Start AR session
      */
     async startARSession() {
+        console.log("Attempting to start AR session");
+        
+        // First, check if WebXR is supported
         if (!navigator.xr) {
-            this.infoMessage.textContent = "WebXR not supported on this browser/device.";
-            this.infoMessage.style.display = 'block';
+            console.warn("WebXR not supported on this browser/device");
+            this.showErrorMessage("WebXR not supported on this browser/device. Try using an AR-capable device.");
             return;
         }
         
+        // Then check if AR is supported
         try {
-            const session = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test', 'dom-overlay'],
-                domOverlay: { root: this.uiContainer }
-            });
+            const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+            if (!isSupported) {
+                console.warn("Immersive AR not supported on this device");
+                this.showErrorMessage("AR is not supported on this device. Try using a device with AR capabilities.");
+                return;
+            }
             
-            this.onSessionStarted(session);
-        } catch (e) {
-            console.error("Failed to start AR session:", e);
-            this.infoMessage.textContent = "Failed to start AR. Ensure your browser supports WebXR and camera permissions are granted.";
-            this.infoMessage.style.display = 'block';
+            console.log("AR is supported, requesting session");
+            
+            // Now try to start the AR session
+            try {
+                const session = await navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: this.uiContainer }
+                });
+                
+                console.log("AR session successfully started");
+                this.onSessionStarted(session);
+            } catch (error) {
+                console.error("Error starting AR session:", error);
+                
+                if (error.name === 'NotAllowedError') {
+                    this.showErrorMessage("Camera permission denied. Please allow camera access for AR.");
+                } else if (error.name === 'SecurityError') {
+                    this.showErrorMessage("AR requires HTTPS for security reasons.");
+                } else {
+                    this.showErrorMessage("Failed to start AR. Check camera permissions and try again.");
+                }
+            }
+        } catch (error) {
+            console.error("Error checking AR support:", error);
+            this.showErrorMessage("Could not determine AR support. Try a different browser or device.");
         }
+    }
+    
+    /**
+     * Display an error message to the user
+     * @param {string} message - The error message to display
+     */
+    showErrorMessage(message) {
+        this.infoMessage.textContent = message;
+        this.infoMessage.style.display = 'block';
+        this.infoMessage.style.backgroundColor = 'rgba(220, 53, 69, 0.9)'; // Error red background
+        
+        // Reset style after 4 seconds
+        setTimeout(() => {
+            this.infoMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        }, 4000);
     }
     
     /**
@@ -311,12 +438,44 @@ class ARViewer {
      * Handle select (tap) event
      */
     onSelect() {
+        console.log("Select event triggered", { 
+            reticleVisible: this.reticle.visible, 
+            modelReady: !!this.modelToPlace 
+        });
+        
         if (this.reticle.visible && this.modelToPlace) {
+            console.log("Placing model at reticle position");
+            
+            // Clone the model to place multiple instances
             const newModel = this.modelToPlace.clone();
+            
+            // Get the position from the reticle's matrix
             newModel.position.setFromMatrixPosition(this.reticle.matrix);
+            
+            // Ensure it's visible
             newModel.visible = true;
             newModel.userData.isPlacedObject = true;
+            
+            // Log the materials for debugging
+            newModel.traverse(child => {
+                if (child.isMesh) {
+                    console.log("Placed mesh materials:", 
+                        Array.isArray(child.material) 
+                            ? child.material.map(m => m.type) 
+                            : child.material.type
+                    );
+                }
+            });
+            
+            // Add to scene
             this.scene.add(newModel);
+            
+            // Update the UI to indicate success
+            this.infoMessage.textContent = "Model placed! Tap again to place more.";
+            console.log("Model placed at", newModel.position);
+        } else {
+            console.warn("Cannot place model - reticle not visible or model not ready");
+            this.infoMessage.textContent = "Move your phone until the placement ring appears, then tap.";
         }
     }
     
@@ -332,20 +491,34 @@ class ARViewer {
         const referenceSpace = this.renderer.xr.getReferenceSpace();
         
         if (!referenceSpace) {
+            console.warn("Reference space not available yet");
             return;
         }
         
-        // Hit testing
+        // Hit testing - only once per session
         if (!this.hitTestSourceRequested) {
-            session.requestReferenceSpace('viewer').then(viewerSpace => {
-                session.requestHitTestSource({ space: viewerSpace }).then(source => {
+            console.log("Requesting hit test source...");
+            
+            session.requestReferenceSpace('viewer')
+                .then(viewerSpace => {
+                    console.log("Viewer space obtained, requesting hit test source");
+                    return session.requestHitTestSource({ space: viewerSpace });
+                })
+                .then(source => {
+                    console.log("Hit test source successfully created");
                     this.hitTestSource = source;
-                }).catch(err => console.error("Could not get hit test source:", err));
-            }).catch(err => console.error("Could not get viewer reference space for hit test:", err));
+                })
+                .catch(err => {
+                    console.error("Error setting up hit test:", err);
+                    // Try again on next frame if there was an error
+                    this.hitTestSourceRequested = false;
+                    this.infoMessage.textContent = "Error setting up AR tracking. Please try again.";
+                });
             
             this.hitTestSourceRequested = true;
         }
         
+        // Process hit test results
         if (this.hitTestSource) {
             const hitTestResults = frame.getHitTestResults(this.hitTestSource);
             
@@ -354,23 +527,20 @@ class ARViewer {
                 const hitPose = hit.getPose(referenceSpace);
                 
                 if (hitPose) {
+                    // Make reticle visible and update position
+                    if (!this.reticle.visible) {
+                        console.log("Reticle now visible - surface detected");
+                        this.infoMessage.textContent = "Surface detected! Tap to place the model.";
+                    }
+                    
                     this.reticle.visible = true;
                     this.reticle.matrix.fromArray(hitPose.transform.matrix);
-                    
-                    // Update HTML reticle if needed
-                    // const screenPos = this.worldToScreen(this.reticle.position, this.camera, this.renderer.domElement);
-                    // if (screenPos) {
-                    //     this.reticleElement.style.left = `${screenPos.x}px`;
-                    //     this.reticleElement.style.top = `${screenPos.y}px`;
-                    //     this.reticleElement.style.display = 'block';
-                    // }
-                } else {
-                    this.reticle.visible = false;
-                    // this.reticleElement.style.display = 'none';
                 }
-            } else {
+            } else if (this.reticle.visible) {
+                // Hide reticle when no hit test results
+                console.log("No surfaces detected, hiding reticle");
                 this.reticle.visible = false;
-                // this.reticleElement.style.display = 'none';
+                this.infoMessage.textContent = "Move your phone to detect surfaces. Tap to place.";
             }
         }
         
