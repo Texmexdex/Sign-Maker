@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create virtual outline elements since they were removed from UI
     const outlineColor = '#000000';
     const outlineThickness = 20;
+    const letterSpacingInput = document.getElementById('letter-spacing');
+    const letterSpacingValue = document.getElementById('letter-spacing-value');
     const extrusionDepthInput = document.getElementById('extrusion-depth');
     const extrusionDepthValue = document.getElementById('extrusion-depth-value');
     const dynamicDepthInput = document.getElementById('dynamic-depth');
@@ -89,6 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
         extrusionDepthValue.textContent = `${extrusionDepthInput.value}mm`;
     });
     
+    letterSpacingInput.addEventListener('input', () => {
+        letterSpacingValue.textContent = `${letterSpacingInput.value}px`;
+    });
+    
     // Event listener for font changes
     document.addEventListener('fontChanged', () => {
         // Switch to text mode when font is changed
@@ -130,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Generate path data based on design mode
             if (window.designMode === 'text') {
                 const text = textInput.value || 'Hello';
-                window.currentPathData = fontManager.generateTextPath(text, 72);
+                const letterSpacing = parseFloat(letterSpacingInput.value);
+                window.currentPathData = fontManager.generateTextPath(text, 72, letterSpacing);
             }
             
             // Check if we have valid path data
@@ -189,7 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
             frontColor: frontColorInput.value,
             sideColor: '#000000', // Always black sides
             outlineColor: outlineColor,
-            outlineThickness: outlineThickness
+            outlineThickness: outlineThickness,
+            letterSpacing: parseFloat(letterSpacingInput.value)
         };
     }
     
