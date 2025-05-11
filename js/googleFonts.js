@@ -4,8 +4,7 @@
  */
 class GoogleFontsManager {
     constructor() {
-        this.apiKey = 'AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN0Rg'; // This is a restricted API key for demonstration
-        this.apiUrl = `https://www.googleapis.com/webfonts/v1/webfonts?key=${this.apiKey}`;
+        // Remove API key and URL for Google Fonts API
         this.fonts = [];
         this.categories = ['serif', 'sans-serif', 'display', 'handwriting', 'monospace'];
         this.popularFonts = [
@@ -51,26 +50,15 @@ class GoogleFontsManager {
      */
     async fetchFontsList() {
         try {
-            // Add local fonts first to ensure we always have options
-            this.fonts = [...this.localFonts];
-            
-            // Then try to fetch from Google
-            const response = await fetch(this.apiUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            
-            // Add Google Fonts
-            this.fonts = [...this.localFonts, ...data.items];
-            console.log(`Successfully loaded ${this.fonts.length} fonts (including ${this.localFonts.length} local fonts)`);
+            // Use only local and system fonts
+            this.fonts = [...this.localFonts, ...this.systemFonts];
+            console.log(`Using ${this.fonts.length} local and system fonts`);
             return this.fonts;
         } catch (error) {
-            console.error('Error fetching Google Fonts:', error);
-            console.log('Using local and system fonts instead');
+            console.error('Error loading fonts:', error);
             
-            // Use local and system fonts if API fails
-            this.fonts = [...this.localFonts, ...this.systemFonts];
+            // Fallback to just local fonts if there's an error
+            this.fonts = [...this.localFonts];
             console.log(`Using ${this.fonts.length} local fonts`);
             return this.fonts;
         }
@@ -111,25 +99,26 @@ class GoogleFontsManager {
 
     /**
      * Generate the CSS link for a Google Font
+     * Note: This method is kept for compatibility but now returns null
      * @param {string} family - Font family name
      * @param {Array} variants - Array of font variants to load
-     * @returns {string} - URL to load the font
+     * @returns {string|null} - URL to load the font or null if unavailable
      */
     getFontUrl(family, variants = ['regular', '700']) {
-        const familyParam = family.replace(/ /g, '+');
-        const variantsParam = variants.join(',');
-        return `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${variantsParam}&display=swap`;
+        // No longer access Google Fonts API
+        return null;
     }
 
     /**
      * Load a Google Font into the document
+     * Note: Now only uses local/system fonts
      * @param {string} family - Font family name
      * @param {Array} variants - Array of font variants to load
      * @returns {Promise} - Resolves when the font is loaded
      */
     loadFont(family, variants = ['regular', '700']) {
-        return new Promise((resolve, reject) => {
-            // If it's one of our local fonts, resolve immediately
+        return new Promise((resolve) => {
+            // Check if it's one of our local or system fonts
             const localFont = this.localFonts.find(f => f.family === family);
             const systemFont = this.systemFonts.find(f => f.family === family);
             
@@ -139,37 +128,15 @@ class GoogleFontsManager {
                 return;
             }
             
-            const link = document.createElement('link');
-            link.href = this.getFontUrl(family, variants);
-            link.rel = 'stylesheet';
-            
-            link.onload = () => {
-                // Create a dummy element to trigger font loading
-                const testElement = document.createElement('div');
-                testElement.style.fontFamily = family;
-                testElement.style.opacity = '0';
-                testElement.textContent = 'Font loaded';
-                document.body.appendChild(testElement);
-                
-                // Give the font some time to load
-                setTimeout(() => {
-                    document.body.removeChild(testElement);
-                    resolve(family);
-                }, 100);
-            };
-            
-            link.onerror = () => {
-                console.warn(`Failed to load font: ${family}, falling back to system font`);
-                // Resolve anyway to allow the UI to continue
-                resolve(family);
-            };
-            
-            document.head.appendChild(link);
+            // For non-local fonts, resolve with the font name but log a warning
+            console.warn(`Font "${family}" not found, using system fallback`);
+            resolve(family);
         });
     }
 
     /**
      * Download a font file and cache it for opentype.js
+     * Note: Now only handles local files
      * @param {string} url - URL to the font file
      * @returns {Promise<ArrayBuffer>} - Resolves with the font data
      */
@@ -179,22 +146,23 @@ class GoogleFontsManager {
         }
 
         try {
-            console.log(`Downloading font file from: ${url}`);
-            const response = await fetch(url, { 
-                mode: 'cors', 
-                credentials: 'omit',
-                redirect: 'follow'
-            });
+            // Only handle local files (those that don't start with http)
+            if (url.startsWith('http')) {
+                throw new Error('Remote font downloading is disabled');
+            }
+            
+            console.log(`Loading local font file: ${url}`);
+            const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`Failed to download font: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to load font: ${response.status} ${response.statusText}`);
             }
             
             const fontData = await response.arrayBuffer();
             this.cachedFontFiles[url] = fontData;
             return fontData;
         } catch (error) {
-            console.error('Error downloading font:', error);
+            console.error('Error loading font:', error);
             throw error;
         }
     }
@@ -222,30 +190,9 @@ class GoogleFontsManager {
                 return 'fonts/Roboto-Regular.ttf';
             }
             
-            // Find the font in the Google Fonts list
-            const fontInfo = this.fonts.find(f => f.family === family);
-            if (!fontInfo) {
-                console.warn(`Font family "${family}" not found, using Roboto Regular`);
-                return 'fonts/Roboto-Regular.ttf';
-            }
-            
-            // Get regular variant (or the first available)
-            const variant = fontInfo.variants.includes('regular') 
-                ? 'regular' 
-                : fontInfo.variants[0];
-            
-            // Check if we have a direct URL to the font file
-            if (!fontInfo.files || !fontInfo.files[variant]) {
-                console.warn(`No suitable file found for ${family}, using Roboto Regular`);
-                return 'fonts/Roboto-Regular.ttf';
-            }
-            
-            const fontUrl = fontInfo.files[variant];
-            console.log(`Using Google Font: ${family} (${fontUrl})`);
-            
-            // At this point, we have a Google font URL
-            // Return the URL directly - don't try to download it as it may cause CORS issues
-            return fontUrl;
+            // No Google Fonts available anymore, use Roboto as fallback
+            console.log(`Font "${family}" not found, using Roboto Regular as fallback`);
+            return 'fonts/Roboto-Regular.ttf';
         } catch (error) {
             console.error('Error getting web font:', error);
             // Fallback to Roboto
