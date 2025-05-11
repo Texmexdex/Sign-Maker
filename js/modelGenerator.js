@@ -65,15 +65,18 @@ class ModelGenerator {
                         
                         // Create materials
                         const materials = [
-                            // First material (index 0) is for front faces
-                            new THREE.MeshBasicMaterial({ 
-                                color: settings.frontColor
+                            // First material (index 0) is for front faces - now glossy
+                            new THREE.MeshPhongMaterial({ 
+                                color: settings.frontColor,
+                                specular: 0x888888,
+                                shininess: 80,
+                                reflectivity: 0.8
                             }),
-                            // Second material (index 1) is for side faces
+                            // Second material (index 1) for side faces - more intense metallic look
                             new THREE.MeshPhongMaterial({ 
                                 color: settings.sideColor,
-                                specular: 0x555555,
-                                shininess: 100,
+                                specular: 0x999999,
+                                shininess: 120,
                                 reflectivity: 1.0
                             })
                         ];

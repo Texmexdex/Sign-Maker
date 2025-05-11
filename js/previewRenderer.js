@@ -212,12 +212,12 @@ class PreviewRenderer {
      * Add lights to the scene
      */
     addLights() {
-        // Ambient light - darker for night scene
-        const ambientLight = new THREE.AmbientLight(0x222244, 0.3);
+        // Ambient light - slightly brighter to better show materials
+        const ambientLight = new THREE.AmbientLight(0x333355, 0.4);
         this.scene.add(ambientLight);
         
         // Add a spotlight from above for dramatic lighting
-        const spotLight = new THREE.SpotLight(0xCCDDFF, 0.8);
+        const spotLight = new THREE.SpotLight(0xCCDDFF, 1.0);
         spotLight.position.set(0, 300, 200);
         spotLight.angle = Math.PI / 6;
         spotLight.penumbra = 0.3;
@@ -228,9 +228,14 @@ class PreviewRenderer {
         this.scene.add(spotLight);
         
         // Add a subtle blue fill light from below for the neon effect
-        const fillLight = new THREE.PointLight(0x4444ff, 0.5, 300);
+        const fillLight = new THREE.PointLight(0x4444ff, 0.6, 300);
         fillLight.position.set(0, -50, 100);
         this.scene.add(fillLight);
+        
+        // Add a key light from the front-right to create highlights
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        keyLight.position.set(100, 50, 200);
+        this.scene.add(keyLight);
     }
 
     /**
@@ -281,16 +286,19 @@ class PreviewRenderer {
         if (model) {
             this.currentModel = model;
             
-            // Force front face to be white with no effects
-            const frontMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff
+            // Force front face to be glossy white
+            const frontMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                specular: 0x888888,
+                shininess: 80,
+                reflectivity: 0.8
             });
             
-            // Black side material with metallic, glossy finish
+            // Black side material with more intense metallic, glossy finish
             const blackSideMaterial = new THREE.MeshPhongMaterial({ 
                 color: 0x000000,
-                specular: 0x555555,
-                shininess: 100,
+                specular: 0x999999,
+                shininess: 120,
                 reflectivity: 1.0
             });
             
@@ -411,9 +419,12 @@ class PreviewRenderer {
         if (colorSettings.frontColor) {
             this.frontColor = colorSettings.frontColor;
             
-            // Create a new material with the chosen color
-            const newMaterial = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(colorSettings.frontColor)
+            // Create a new material with the chosen color - now glossy
+            const newMaterial = new THREE.MeshPhongMaterial({
+                color: new THREE.Color(colorSettings.frontColor),
+                specular: 0x888888,
+                shininess: 80,
+                reflectivity: 0.8
             });
             
             // Update materials on all model meshes
